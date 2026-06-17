@@ -81,6 +81,9 @@ pub struct AppState {
     open_file: Option<String>,
     /// The Hugo preview URL, surfaced by E5 once a server is running.
     preview_url: Option<String>,
+    /// The opened file's text, supplied by the host for the read-only viewer
+    /// (E6). The UI never reads files itself.
+    open_file_contents: Option<String>,
     /// Which navigation view a freshly opened site shows first.
     default_nav: NavView,
 }
@@ -100,6 +103,7 @@ impl AppState {
             selected_browse: 0,
             open_file: None,
             preview_url: None,
+            open_file_contents: None,
             default_nav: if schema_nav_first {
                 NavView::SchemaMenu
             } else {
@@ -140,6 +144,18 @@ impl AppState {
     /// The file open in `ViewFile`, if any.
     pub fn open_file(&self) -> Option<&str> {
         self.open_file.as_deref()
+    }
+
+    /// Supply the opened file's path and contents for the read-only viewer (E6).
+    /// The host reads the bytes; the UI library never touches the filesystem.
+    pub fn set_open_file(&mut self, path: impl Into<String>, contents: impl Into<String>) {
+        self.open_file = Some(path.into());
+        self.open_file_contents = Some(contents.into());
+    }
+
+    /// The opened file's contents, if supplied.
+    pub fn open_file_contents(&self) -> Option<&str> {
+        self.open_file_contents.as_deref()
     }
 }
 
@@ -393,11 +409,18 @@ fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
             };
             (title.to_string(), rows, state.selected_browse)
         }
-        Mode::ViewFile => (
-            "View (read-only)".to_string(),
-            vec![state.open_file.clone().unwrap_or_default()],
-            0,
-        ),
+        Mode::ViewFile => {
+            // Title names the open file; the body is its contents, read-only.
+            let title = match state.open_file() {
+                Some(path) => format!("{path} (read-only)"),
+                None => "View (read-only)".to_string(),
+            };
+            let rows = match state.open_file_contents() {
+                Some(contents) => contents.lines().map(str::to_string).collect(),
+                None => vec!["(no file contents)".to_string()],
+            };
+            (title, rows, 0)
+        }
         Mode::Agent => ("Browse".to_string(), Vec::new(), 0),
     };
 

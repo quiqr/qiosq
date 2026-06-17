@@ -25,6 +25,8 @@ thiserror = "1"
 tempfile = "3"
 serde_yaml = "0.9"
 ratatui = "0.30"
+rmux-sdk = "0.6"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

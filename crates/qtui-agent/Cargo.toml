@@ -8,7 +8,19 @@ rust-version.workspace = true
 description = "Agent adapter trait + Claude Code impl over rmux-sdk (detached, pinned workdir)"
 
 [dependencies]
-# E6 adds rmux-sdk (pinned) and may use qtui-model types for schema context.
+# The Agent trait + intent/sentinel logic + FakeAgent are runtime-free. The
+# real RmuxAgent uses rmux-sdk (daemon-backed; see bean qiosq-rts9) over tokio.
+thiserror = { workspace = true }
+rmux-sdk = { workspace = true }
+tokio = { workspace = true }
+
+# The scripted fake agent used by bridge tests and the E7 e2e harness.
+[[bin]]
+name = "fake-agent"
+path = "tests/bin/fake-agent.rs"
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

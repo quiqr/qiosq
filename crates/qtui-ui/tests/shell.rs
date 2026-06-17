@@ -326,3 +326,41 @@ fn browse_surfaces_the_preview_url() {
         "Browse should surface the preview URL:\n{screen}"
     );
 }
+
+// ----- read-only file viewer (E6) -------------------------------------------
+
+#[test]
+fn viewfile_renders_supplied_contents_read_only() {
+    let mut app = opened(NavView::ContentTree);
+    // Move to about.md and open it -> ViewFile.
+    update(&mut app, key(KeyCode::Down));
+    update(&mut app, key(KeyCode::Down));
+    update(&mut app, key(KeyCode::Enter));
+    assert_eq!(app.mode(), &Mode::ViewFile);
+
+    // Host supplies the file's bytes (the UI never reads files itself).
+    app.set_open_file("about.md", "# About\n\nHello world.");
+    let screen = render_to_string(&app);
+
+    // Contents are shown, the title marks it read-only, and no edit verb exists.
+    assert!(
+        screen.contains("# About"),
+        "viewer shows contents:\n{screen}"
+    );
+    assert!(
+        screen.contains("Hello world."),
+        "viewer shows body:\n{screen}"
+    );
+    assert!(
+        screen.contains("read-only"),
+        "viewer marked read-only:\n{screen}"
+    );
+    let labels: Vec<&str> = legend(&app).into_iter().map(|e| e.label).collect();
+    assert!(labels.contains(&"Ask AI"));
+    for forbidden in ["Edit", "Save", "Write", "Delete"] {
+        assert!(
+            !labels.contains(&forbidden),
+            "no {forbidden} verb in viewer"
+        );
+    }
+}
