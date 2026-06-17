@@ -1,0 +1,6 @@
+- key: good
+  title: Good Collection
+  folder: content/good
+  fields:
+    - key: title
+      type: string

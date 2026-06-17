@@ -1,0 +1,12 @@
+- key: Content
+  title: Content
+  menuItems:
+    - key: pages
+    - key: posts
+    - key: frontpage
+
+- key: Settings
+  title: "Settings "
+  menuItems:
+    - key: mainConfig
+    - key: ghost   # references nothing — must be dropped with a warning

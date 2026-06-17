@@ -1,0 +1,14 @@
+- key: frontpage
+  file: /content/_index.md
+  previewUrl: /          # unknown key, must be ignored
+  title: Homepage
+  fields:
+    - key: header_headline
+      title: Headline
+      type: string
+    - key: header_subheadline
+      type: string        # no title -> falls back to key
+
+- key: mainConfig
+  file: /config.toml
+  _mergePartial: single_conf_params

@@ -1,0 +1,6 @@
+- key: notes
+  title: Notes
+  folder: content/notes
+  fields:
+    - key: title
+      type: string

@@ -1,0 +1,7 @@
+build:
+  - config: config.toml
+    key: default
+hugover: extended_0.76.5
+serve:
+  - config: config.toml
+    key: default

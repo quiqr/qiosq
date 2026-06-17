@@ -9,6 +9,8 @@ description = "Parse quiqr/model/base.yaml + includes/ into a read-only Navigati
 
 # Pure crate: must not depend on ratatui/rmux (see docs/01-architecture.md §2).
 [dependencies]
+serde = { workspace = true }
+serde_yaml = { workspace = true }
 
 [lints]
 workspace = true

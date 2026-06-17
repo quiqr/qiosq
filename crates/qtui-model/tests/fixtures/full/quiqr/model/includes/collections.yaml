@@ -1,0 +1,32 @@
+- dataformat: yaml       # unknown key, ignored
+  description: Pages like about, etc...
+  folder: content/page/
+  key: pages
+  title: Pages
+  hideIndex: true        # unknown key, ignored
+  extension: md
+  fields:
+    - key: title
+      title: Title
+      type: string
+    - key: date
+      title: Date
+      type: date
+
+- folder: content/post
+  key: posts
+  title: Posts
+  fields:
+    - key: title
+      title: Title
+      type: string
+    - key: tags
+      title: Tags
+      type: chips
+    - key: images
+      type: bundle-manager
+      path: ./images       # unknown key, ignored
+      fields:
+        - key: thumb
+          title: Thumb
+          type: bundle-image-thumbnail

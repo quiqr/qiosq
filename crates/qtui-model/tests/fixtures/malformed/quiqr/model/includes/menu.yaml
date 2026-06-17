@@ -1,0 +1,7 @@
+# Deliberately invalid YAML: unbalanced brackets / bad indentation.
+- key: Broken
+  title: Broken
+  menuItems:
+   - key: good
+  : : :
+    [unclosed

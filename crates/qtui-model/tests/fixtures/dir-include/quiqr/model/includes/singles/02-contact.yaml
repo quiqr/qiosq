@@ -1,0 +1,6 @@
+- key: contact
+  title: Contact
+  file: /content/contact.md
+  fields:
+    - key: email
+      type: string
