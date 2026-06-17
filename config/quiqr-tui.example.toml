@@ -44,4 +44,3 @@ show_schema_nav_first = true   # Browse mode leads with the Quiqr Menu, not raw 
 [rmux]
 # rmux is young — pin the version you build/test against.
 version = "0.1"
-EOF

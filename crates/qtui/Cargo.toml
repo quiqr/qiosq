@@ -1,0 +1,23 @@
+[package]
+name = "qtui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "quiqr-tui (Reveal) — the kiosk binary that wires the services together"
+
+[[bin]]
+name = "qtui"
+path = "src/main.rs"
+
+[dependencies]
+qtui-config = { path = "../qtui-config" }
+qtui-storage = { path = "../qtui-storage" }
+qtui-model = { path = "../qtui-model" }
+qtui-agent = { path = "../qtui-agent" }
+qtui-preview = { path = "../qtui-preview" }
+qtui-ui = { path = "../qtui-ui" }
+
+[lints]
+workspace = true

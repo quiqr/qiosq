@@ -1,0 +1,14 @@
+[package]
+name = "qtui-storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Quiqr/Hugo read-only storage layer: locate data dir, enumerate sites, content tree"
+
+# Pure crate: must not depend on ratatui/rmux (see docs/01-architecture.md §2).
+[dependencies]
+
+[lints]
+workspace = true

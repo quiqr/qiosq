@@ -1,0 +1,14 @@
+[package]
+name = "qtui-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "ratatui two-pane WP5.1 chrome: layout, function-key legend, mode state machine"
+
+[dependencies]
+# E4 adds ratatui (+ ratatui-rmux in E7). Kept out of the pure crates.
+
+[lints]
+workspace = true

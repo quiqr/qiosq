@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/qtui-config",
+    "crates/qtui-storage",
+    "crates/qtui-model",
+    "crates/qtui-agent",
+    "crates/qtui-preview",
+    "crates/qtui-ui",
+    "crates/qtui",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/quiqr/quosq"
+rust-version = "1.80"
+
+# Shared dependency versions. Crates opt in via `dep = { workspace = true }`.
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+thiserror = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }

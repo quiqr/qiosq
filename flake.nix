@@ -35,16 +35,26 @@
           };
 
           # Tools the agent and developers need in the shell.
-          # NOTE: beans, openspec, and the agent CLI (claude) may not be in
-          # nixpkgs. Prefer pinned flake inputs or small derivations over
-          # dropping them. Placeholders below — the agent resolves these in E1.
+          # Resolution decided in E1 (poc-foundation):
+          #   - beans   -> nixpkgs#beans (hmans/beans, the markdown issue
+          #                tracker — NOT the unrelated "Rust Type Kit" rtk).
+          #   - openspec-> nixpkgs#openspec (Fission-AI/OpenSpec).
+          # Both are packaged in nixpkgs-unstable, so no extra flake input or
+          # build-from-source derivation is needed for the foundation.
+          #
+          # The coding agent CLI (`claude`) is intentionally NOT pinned here:
+          # it is only exercised by E6/E7, and the deterministic tests use the
+          # `fake-agent` (built in-tree) rather than a real LLM. When E6 lands,
+          # add the agent + `rmux-sdk` via a pinned input/derivation rather than
+          # weakening the flake. Until then the shell ships everything E1–E5
+          # need.
           devTools = with pkgs'; [
             rustToolchain
             hugo
             git
-            nodejs_22        # openspec + beans (if npm-distributed) run on Node
-            # TODO(E1): add `beans`, `openspec`, and the `claude` CLI here via
-            # the appropriate input/derivation. Document the choice in flake.
+            nodejs_22        # runtime some agent/spec tooling expects
+            beans            # nixpkgs#beans — agent-first issue tracker
+            openspec         # nixpkgs#openspec — spec-driven development CLI
           ];
         in
         {
@@ -53,7 +63,10 @@
           devShells.default = pkgs'.mkShell {
             packages = devTools;
             shellHook = ''
-              echo "quiqr-tui dev shell — run 'beans prime' then read CLAUDE.md"
+              echo "quiqr-tui dev shell"
+              echo "  rust: $(rustc --version 2>/dev/null)"
+              echo "  beans $(beans version 2>/dev/null | head -n1) | openspec $(openspec --version 2>/dev/null)"
+              echo "  -> run 'beans prime' and read CLAUDE.md before coding."
             '';
           };
 
@@ -65,15 +78,19 @@
             cargoLock.lockFile = ./Cargo.lock;  # exists after E1 scaffolding
           };
 
-          # `nix flake check` runs unit/integration tests on the host.
+          # `nix flake check` runs the workspace unit + integration tests. This
+          # is a *check* derivation, not a package: we build the test binaries,
+          # run them, and emit a trivial $out (the cargo install hook is skipped
+          # because there is nothing to install for a test-only build).
           checks.unit = pkgs'.rustPlatform.buildRustPackage {
             pname = "quiqr-tui-tests";
             version = "0.0.0";
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             doCheck = true;
-            buildPhase = "cargo test --workspace --no-run";
-            checkPhase = "cargo test --workspace";
+            buildPhase = "cargo test --workspace --no-run --release";
+            checkPhase = "cargo test --workspace --release";
+            installPhase = "touch $out";
           };
 
           # End-to-end: boot a VM running Quiqr Server, provision a sample site,

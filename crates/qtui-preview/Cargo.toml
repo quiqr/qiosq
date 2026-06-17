@@ -1,0 +1,13 @@
+[package]
+name = "qtui-preview"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Start/stop `hugo server` per site, track URL & lifecycle (avoid :13131)"
+
+[dependencies]
+
+[lints]
+workspace = true

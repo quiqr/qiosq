@@ -1,0 +1,14 @@
+[package]
+name = "qtui-agent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Agent adapter trait + Claude Code impl over rmux-sdk (detached, pinned workdir)"
+
+[dependencies]
+# E6 adds rmux-sdk (pinned) and may use qtui-model types for schema context.
+
+[lints]
+workspace = true
