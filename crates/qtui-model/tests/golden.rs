@@ -132,3 +132,44 @@ fn missing_model_yields_empty() {
     assert_eq!(model, Default::default());
     let _ = std::fs::remove_dir_all(&tmp);
 }
+
+/// Parse the anonymized real-site fixture (shared with qtui-storage). This is a
+/// genuine Quiqr schema — `pages`/`posts` collections, several singles that defer
+/// fields to `_mergePartial`, and a four-group menu — so it exercises the
+/// tolerant parser against real-world shape (singles with no inline fields).
+#[test]
+fn parses_the_anonymized_real_site() {
+    let site =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../qtui-storage/tests/fixtures/real-site");
+    let model = load_model(&site);
+
+    // Collections with their folders.
+    assert_eq!(
+        model.collection("pages").and_then(|c| c.folder.as_deref()),
+        Some("content/page/")
+    );
+    assert!(model.collection("posts").is_some());
+
+    // `pages` carries real field defs (title/date/author/description/…).
+    let pages = model.collection("pages").unwrap();
+    assert!(pages.fields.iter().any(|f| f.key == "title"));
+    assert!(pages.fields.iter().any(|f| f.key == "date"));
+
+    // Singles that defer to a partial parse with an empty field list and a
+    // recorded partial reference — the tolerant path.
+    let main_config = model.single("mainConfig").expect("mainConfig single");
+    assert!(main_config.fields.is_empty());
+    assert!(main_config.merge_partial.is_some());
+
+    // The four menu groups, in order, with resolved entries.
+    let groups: Vec<&str> = model.menu.iter().map(|g| g.key.as_str()).collect();
+    assert_eq!(groups, ["Content", "images", "Settings", "Developer"]);
+    let content = &model.menu[0];
+    assert_eq!(
+        content.entries,
+        vec![
+            MenuEntry::Collection("pages".into()),
+            MenuEntry::Collection("posts".into()),
+        ]
+    );
+}
