@@ -348,6 +348,30 @@ pub fn render(frame: &mut Frame, state: &AppState) {
 }
 
 fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
+    // In Browse, reserve a one-row strip above the list to surface the live
+    // preview URL (when a server is running). Rendering it on its own line keeps
+    // the full URL readable instead of truncating it inside the narrow border
+    // title.
+    let show_preview = matches!(state.mode, Mode::Browse { .. }) && state.preview_url().is_some();
+    let (preview_area, list_area) = if show_preview {
+        let parts = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(1), Constraint::Min(1)])
+            .split(area);
+        (Some(parts[0]), parts[1])
+    } else {
+        (None, area)
+    };
+
+    if let Some(pa) = preview_area {
+        let url = state.preview_url().unwrap_or("");
+        let line = Line::from(vec![
+            Span::styled("Preview: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(url.to_string()),
+        ]);
+        frame.render_widget(Paragraph::new(line), pa);
+    }
+
     let (title, rows, selected) = match &state.mode {
         Mode::SiteList => (
             "Sites".to_string(),
@@ -367,7 +391,7 @@ fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
                 NavView::ContentTree => content_rows(&state.content),
                 NavView::SchemaMenu => menu_rows(&state.model),
             };
-            (with_preview(title, state), rows, state.selected_browse)
+            (title.to_string(), rows, state.selected_browse)
         }
         Mode::ViewFile => (
             "View (read-only)".to_string(),
@@ -383,14 +407,7 @@ fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
         .highlight_symbol("> ");
     let mut st = ListState::default();
     st.select(Some(selected));
-    frame.render_stateful_widget(list, area, &mut st);
-}
-
-fn with_preview(title: &str, state: &AppState) -> String {
-    match state.preview_url() {
-        Some(url) => format!("{title} — preview: {url}"),
-        None => title.to_string(),
-    }
+    frame.render_stateful_widget(list, list_area, &mut st);
 }
 
 fn render_right(frame: &mut Frame, area: Rect) {

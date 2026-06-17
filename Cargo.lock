@@ -950,6 +950,11 @@ dependencies = [
 [[package]]
 name = "qtui-preview"
 version = "0.0.0"
+dependencies = [
+ "qtui-config",
+ "tempfile",
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "qtui-storage"

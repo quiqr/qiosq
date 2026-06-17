@@ -8,6 +8,11 @@ rust-version.workspace = true
 description = "Start/stop `hugo server` per site, track URL & lifecycle (avoid :13131)"
 
 [dependencies]
+qtui-config = { path = "../qtui-config" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

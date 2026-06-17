@@ -309,3 +309,20 @@ fn schema_menu_view_lists_model_menu() {
     assert!(screen.contains("Posts"), "collection title:\n{screen}");
     assert!(screen.contains("About"), "single title:\n{screen}");
 }
+
+// ----- preview URL surfacing (E5) -------------------------------------------
+
+#[test]
+fn browse_surfaces_the_preview_url() {
+    let mut app = opened(NavView::ContentTree);
+    // No preview running yet: the URL must not appear.
+    assert!(!render_to_string(&app).contains("13150"));
+
+    // Once E5's preview layer sets the URL, Browse surfaces it.
+    app.set_preview_url(Some("http://localhost:13150/".into()));
+    let screen = render_to_string(&app);
+    assert!(
+        screen.contains("13150"),
+        "Browse should surface the preview URL:\n{screen}"
+    );
+}
