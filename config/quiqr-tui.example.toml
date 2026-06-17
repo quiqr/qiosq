@@ -1,0 +1,47 @@
+# quiqr-tui example configuration
+# Copy to config/quiqr-tui.toml and adjust for your machine/server.
+# Everything environment-specific lives here so the PoC is portable.
+
+[storage]
+# Absolute path to the Quiqr Data directory that Quiqr Server uses.
+# Linux/BSD default is typically ~/Quiqr Data ; set explicitly here.
+quiqr_data_dir = "/home/quiqr/Quiqr Data"
+
+# Dirs to hide in the read-only content browser (derived/generated/VCS).
+hidden_dirs = ["public", "resources", ".quiqr-cache", ".git", "themes"]
+
+[preview]
+# Hugo binary (let Nix provide it; override if needed).
+hugo_bin = "hugo"
+# Port range for `hugo server`. MUST NOT include 13131 (Quiqr's default).
+port_range = [13140, 13200]
+# How long to wait for "Web Server is available" before reporting an error (ms).
+ready_timeout_ms = 15000
+
+[agent]
+# The coding agent command. Claude Code is the default; the Agent trait keeps
+# this swappable. Use the fake agent for automated tests.
+command = "claude"
+args = ["--permission-mode", "restricted"]   # adjust to the real Claude Code flags
+# String the agent prints when it has finished a task; used to detect completion.
+completion_sentinel = "<<QTUI_TASK_DONE>>"
+# Working dir is always pinned to the opened site repo at runtime (not set here).
+# Schema fields are injected into the agent prompt so output validates in Quiqr.
+
+[agent.sandbox]
+# The agent may write only under these subpaths of the opened site.
+writable_paths = ["content", "static"]
+# Never writable (schema integrity, build output).
+readonly_paths = ["quiqr", "public", "resources"]
+# Commits go to a working branch, never main (publish pipeline owns the rest).
+commit_branch_prefix = "qtui/"
+
+[ui]
+# WordPerfect-5.1 styling toggles (cosmetic).
+theme = "wp51"          # classic blue work area + bottom legend
+show_schema_nav_first = true   # Browse mode leads with the Quiqr Menu, not raw tree
+
+[rmux]
+# rmux is young — pin the version you build/test against.
+version = "0.1"
+EOF

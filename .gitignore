@@ -1,0 +1,18 @@
+# Rust / Cargo build artifacts
+/target/
+**/*.rs.bk
+
+# Nix
+/result
+/result-*
+
+# Local, machine-specific config (the example is tracked; the real one is not)
+/config/quiqr-tui.toml
+
+# Editor / OS noise
+*.swp
+.DS_Store
+
+# jj keeps its own state under .jj/ (already managed); do not ignore .git in a
+# colocated repo — jj needs it. beans (.beans/, beans markdown) and openspec/
+# are intentionally tracked: they are the durable audit trail.
