@@ -9,6 +9,9 @@ description = "ratatui two-pane WP5.1 chrome: layout, function-key legend, mode 
 
 [dependencies]
 # E4 adds ratatui (+ ratatui-rmux in E7). Kept out of the pure crates.
+ratatui = { workspace = true }
+qtui-storage = { path = "../qtui-storage" }
+qtui-model = { path = "../qtui-model" }
 
 [lints]
 workspace = true
