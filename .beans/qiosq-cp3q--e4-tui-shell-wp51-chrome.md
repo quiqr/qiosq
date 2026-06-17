@@ -1,11 +1,11 @@
 ---
-# quosq-cp3q
+# qiosq-cp3q
 title: E4 — TUI shell (WP5.1 chrome)
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: the two-pane shell, legend, and mode state machine.

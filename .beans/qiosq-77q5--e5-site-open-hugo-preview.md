@@ -1,11 +1,11 @@
 ---
-# quosq-77q5
+# qiosq-77q5
 title: E5 — Site open + Hugo preview
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: opening a site serves it and surfaces the URL.

@@ -1,5 +1,5 @@
 {
-  description = "quiqr-tui (Reveal) — kiosked WP5.1-style TUI CMS frontend for Quiqr";
+  description = "quiqr-tui (qiosq) — kiosked WP5.1-style TUI CMS frontend for Quiqr";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

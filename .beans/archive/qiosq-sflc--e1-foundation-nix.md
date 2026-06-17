@@ -1,12 +1,12 @@
 ---
-# quosq-sflc
+# qiosq-sflc
 title: E1 — Foundation & Nix
 status: completed
 type: epic
 priority: high
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T16:12:25Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: a reproducible workspace that builds and tests under Nix.

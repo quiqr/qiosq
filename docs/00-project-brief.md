@@ -1,7 +1,7 @@
 # 00 — Project Brief
 
-**Codename:** Reveal (a nod to WordPerfect 5.1's *Reveal Codes*; rename freely)
-**Repo:** quiqr-tui
+**Codename:** qiosq (a q'ification of *kiosk*; was *Reveal*, a nod to WordPerfect 5.1's *Reveal Codes*)
+**Repo:** qiosq (crates remain `quiqr-tui` / `qtui`)
 **Status:** PoC / alpha base
 
 ---

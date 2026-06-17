@@ -1,11 +1,11 @@
 ---
-# quosq-me0f
+# qiosq-me0f
 title: E6 — Read-only file view + send-to-agent bridge
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: the core interaction.

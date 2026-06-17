@@ -1,4 +1,4 @@
-//! quiqr-tui (codename *Reveal*) — the kiosk binary.
+//! quiqr-tui (codename *qiosq*) — the kiosk binary.
 //!
 //! Epic E1: this entrypoint only reports its version, proving the workspace
 //! wires together and `nix build` produces a runnable binary. Later epics load

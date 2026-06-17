@@ -3,7 +3,7 @@
 **IMPORTANT: before you do anything else, run `beans prime` and heed its
 output.** Then read this file fully. Re-read it at the start of every session.
 
-You are building the **quiqr-tui** PoC (codename *Reveal*) autonomously. This
+You are building the **quiqr-tui** PoC (codename *qiosq*) autonomously. This
 file is your contract. The product vision is in `docs/00-project-brief.md`; the
 architecture is in `docs/01-architecture.md`; the testing bar is in
 `docs/02-testing-strategy.md`. Read all three before writing code.

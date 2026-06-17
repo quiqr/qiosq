@@ -1,11 +1,11 @@
 ---
-# quosq-8z4l
+# qiosq-8z4l
 title: E2 — Quiqr storage layer
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: read-only knowledge of the Quiqr/Hugo storage.

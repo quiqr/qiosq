@@ -1,11 +1,11 @@
 ---
-# quosq-9m0x
+# qiosq-9m0x
 title: E3 — Quiqr schema → navigation model
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: turn the schema into the WP-style Menu and into agent constraints.

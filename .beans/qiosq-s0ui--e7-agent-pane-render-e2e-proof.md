@@ -1,11 +1,11 @@
 ---
-# quosq-s0ui
+# qiosq-s0ui
 title: E7 — Agent pane render + E2E proof
 status: todo
 type: epic
 created_at: 2026-06-17T15:56:53Z
 updated_at: 2026-06-17T15:56:53Z
-parent: quosq-mer9
+parent: qiosq-mer9
 ---
 
 Goal: see the agent work, and prove the whole flow in a VM.

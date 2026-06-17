@@ -1,5 +1,5 @@
 ---
-# quosq-mer9
+# qiosq-mer9
 title: M1 — Two-pane PoC against Quiqr Server
 status: todo
 type: milestone

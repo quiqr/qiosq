@@ -1,4 +1,4 @@
-# quiqr-tui (codename *Reveal*)
+# quiqr-tui (codename *qiosq*)
 
 > A WordPerfect-5.1-style, kiosked terminal UI that lets non-technical authors
 > manage a Quiqr/Hugo site over SSH and direct a coding agent (Claude Code) to
