@@ -162,9 +162,11 @@
                 machine.wait_for_unit("quiqr-server.service")
 
                 # 2. Provision the sample site into the Quiqr data directory.
-                machine.succeed("mkdir -p '${dataDir}/examplesite'")
-                machine.succeed("cp -r ${fixture}/. '${dataDir}/examplesite/'")
-                machine.succeed("test -f '${dataDir}/examplesite/quiqr/model/base.yaml'")
+                #    The fixture is already laid out as a Quiqr data folder
+                #    (sites/<name>/{config.json, main/…}), so copy its contents in.
+                machine.succeed("mkdir -p '${dataDir}'")
+                machine.succeed("cp -r ${fixture}/. '${dataDir}/'")
+                machine.succeed("test -f '${dataDir}/sites/examplesite/main/quiqr/model/base.yaml'")
 
                 # 3. Write a qtui config pointing at that data dir, with the
                 #    fake-agent (writes a file + prints the sentinel) as the agent.
@@ -184,8 +186,9 @@
                 """)
 
                 # 4. Run qtui headless through the full flow. The fake-agent writes
-                #    the new content file (QTUI_FAKE_WRITE) when "asked".
-                new_file = "${dataDir}/examplesite/content/post/agent-wrote-this.md"
+                #    the new content file (QTUI_FAKE_WRITE) when "asked". The path
+                #    is inside the site's working copy (sites/<name>/main).
+                new_file = "${dataDir}/sites/examplesite/main/content/post/agent-wrote-this.md"
                 machine.succeed(
                     f"QTUI_FAKE_WRITE='{new_file}' QTUI_FAKE_SENTINEL='<<QTUI_TASK_DONE>>' "
                     "qtui --config /root/qtui.toml --site examplesite "

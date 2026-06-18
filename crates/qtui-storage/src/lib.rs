@@ -30,12 +30,16 @@ pub enum StorageError {
     },
 }
 
-/// A discovered Quiqr site: its directory name and absolute path.
+/// A discovered Quiqr site.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Site {
-    /// The site's directory name (used as its display name).
+    /// The site's directory name under `<data>/sites/` (its display name).
     pub name: String,
-    /// Absolute path to the site's root directory.
+    /// Absolute path to the site's **working copy** — the directory that holds
+    /// `quiqr/` and `content/`. Resolved from the site descriptor's
+    /// `source.path` (e.g. `<data>/sites/<name>/main`, or the site dir itself
+    /// for a flat `"./"` site). This is what the content tree, schema model, and
+    /// the Hugo preview all operate on.
     pub path: PathBuf,
 }
 
@@ -109,28 +113,71 @@ fn has_hugo_config(dir: &Path) -> bool {
     false
 }
 
-/// Enumerate the Quiqr sites directly under `data_dir`, sorted by name.
+/// The Quiqr site descriptor (`<data>/sites/<name>/config.json`). Tolerant:
+/// only the fields we need are modelled; unknown keys are ignored.
+#[derive(Debug, Default, serde::Deserialize)]
+struct SiteConfig {
+    #[serde(default)]
+    source: SiteSource,
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+struct SiteSource {
+    /// The working-copy path relative to the site dir (e.g. `"main"` or `"./"`).
+    #[serde(default)]
+    path: Option<String>,
+}
+
+/// Resolve a site's working copy from its descriptor's `source.path`, relative
+/// to `site_dir`. `"."`, `"./"`, empty, or absent resolve to the site dir
+/// itself (a flat site); anything else is joined onto the site dir.
+fn resolve_work_dir(site_dir: &Path, source_path: Option<&str>) -> PathBuf {
+    match source_path.map(str::trim) {
+        None | Some("") | Some(".") | Some("./") => site_dir.to_path_buf(),
+        Some(rel) => site_dir.join(rel),
+    }
+}
+
+/// Enumerate the Quiqr sites under `<data_dir>/sites/`, sorted by name.
 ///
-/// Returns an empty list (not an error) when the directory exists but holds no
-/// site-shaped subdirectories. Returns [`StorageError::DataDir`] naming the path
-/// when `data_dir` is missing or unreadable. Never writes.
+/// A site is an entry `<data>/sites/<name>/` that has a readable `config.json`
+/// descriptor; its working copy is resolved from `source.path`. Returns an empty
+/// list (not an error) when the data dir has no `sites/` subdirectory or it holds
+/// no site-shaped entries. Returns [`StorageError::DataDir`] naming the path when
+/// `data_dir` itself is missing or unreadable. Never writes.
 pub fn enumerate_sites(data_dir: &Path) -> Result<Vec<Site>, StorageError> {
-    let entries = std::fs::read_dir(data_dir).map_err(|source| StorageError::DataDir {
+    // The data dir must exist/be readable; surface that as an error.
+    std::fs::read_dir(data_dir).map_err(|source| StorageError::DataDir {
         path: data_dir.to_path_buf(),
         source,
     })?;
 
+    // Sites live under `<data>/sites/`. No such dir => no sites (not an error).
+    let sites_dir = data_dir.join("sites");
+    let Ok(entries) = std::fs::read_dir(&sites_dir) else {
+        return Ok(Vec::new());
+    };
+
     let mut sites = Vec::new();
     for entry in entries.flatten() {
-        let path = entry.path();
-        // Only immediate subdirectories are candidates.
+        let site_dir = entry.path();
         if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
             continue;
         }
-        if is_quiqr_site(&path) {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            sites.push(Site { name, path });
-        }
+        // A site is identified by a readable config.json descriptor.
+        let Ok(text) = std::fs::read_to_string(site_dir.join("config.json")) else {
+            continue;
+        };
+        // Tolerant parse; a malformed descriptor excludes the entry.
+        let Ok(cfg) = serde_json::from_str::<SiteConfig>(&text) else {
+            continue;
+        };
+        let work_dir = resolve_work_dir(&site_dir, cfg.source.path.as_deref());
+        let name = entry.file_name().to_string_lossy().into_owned();
+        sites.push(Site {
+            name,
+            path: work_dir,
+        });
     }
     sites.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(sites)
@@ -195,15 +242,28 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
-    /// Build a Quiqr-site-shaped directory under `root/name`:
-    /// a `config.toml`, a `quiqr/` dir, and an optional `content/` layout given
-    /// as a list of relative paths (trailing `/` => directory, else file).
-    fn make_site(root: &Path, name: &str, content: &[&str]) -> PathBuf {
-        let site = root.join(name);
-        fs::create_dir_all(site.join("quiqr")).unwrap();
-        fs::write(site.join("config.toml"), "title = \"t\"\n").unwrap();
+    /// Build a real-layout Quiqr site under `<data>/sites/<name>/` with a
+    /// `config.json` (`source.path = "main"`) and a `main/` working copy holding
+    /// `quiqr/` + the given `content/` layout (trailing `/` => directory, else
+    /// file). Returns the working-copy path (what enumeration resolves to).
+    fn make_site(data_dir: &Path, name: &str, content: &[&str]) -> PathBuf {
+        make_site_with(data_dir, name, "main", content)
+    }
+
+    /// Like [`make_site`] but with a chosen `source.path` (e.g. `"./"` for a flat
+    /// site, where the working copy is the site dir itself).
+    fn make_site_with(data_dir: &Path, name: &str, source_path: &str, content: &[&str]) -> PathBuf {
+        let site_dir = data_dir.join("sites").join(name);
+        fs::create_dir_all(&site_dir).unwrap();
+        fs::write(
+            site_dir.join("config.json"),
+            format!(r#"{{"key":"{name}","name":"{name}","source":{{"type":"folder","path":"{source_path}"}}}}"#),
+        )
+        .unwrap();
+        let work = resolve_work_dir(&site_dir, Some(source_path));
+        fs::create_dir_all(work.join("quiqr")).unwrap();
         for item in content {
-            let p = site.join("content").join(item.trim_end_matches('/'));
+            let p = work.join("content").join(item.trim_end_matches('/'));
             if item.ends_with('/') {
                 fs::create_dir_all(&p).unwrap();
             } else {
@@ -211,7 +271,7 @@ mod tests {
                 fs::write(&p, b"body").unwrap();
             }
         }
-        site
+        work
     }
 
     fn site_of(path: PathBuf) -> Site {
@@ -230,18 +290,71 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         make_site(tmp.path(), "zeta", &[]);
         make_site(tmp.path(), "alpha", &[]);
-        // An unrelated directory (no quiqr/, no config).
-        fs::create_dir_all(tmp.path().join("not-a-site/sub")).unwrap();
+        // An entry under sites/ with no config.json descriptor (e.g. a scratch
+        // dir like Quiqr's `test/`) must be excluded.
+        fs::create_dir_all(tmp.path().join("sites/not-a-site/sub")).unwrap();
 
         let sites = enumerate_sites(tmp.path()).unwrap();
         let names: Vec<_> = sites.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, ["alpha", "zeta"]);
+        // Each site's path is the absolute working copy (sites/<name>/main).
         assert!(sites.iter().all(|s| s.path.is_absolute()));
+        assert!(sites[0].path.ends_with("sites/alpha/main"));
     }
 
     #[test]
-    fn enumerate_empty_dir_is_ok_and_empty() {
+    fn enumerate_resolves_main_and_flat_working_copies() {
         let tmp = TempDir::new().unwrap();
+        make_site_with(tmp.path(), "std", "main", &["about.md"]);
+        make_site_with(tmp.path(), "flat", "./", &["index.md"]);
+
+        let sites = enumerate_sites(tmp.path()).unwrap();
+        let std = sites.iter().find(|s| s.name == "std").unwrap();
+        let flat = sites.iter().find(|s| s.name == "flat").unwrap();
+        assert!(std.path.ends_with("sites/std/main"));
+        // A flat ("./") site's working copy is the site dir itself.
+        assert!(flat.path.ends_with("sites/flat"));
+        // Both expose a real working copy with content/.
+        assert!(std.path.join("content/about.md").is_file());
+        assert!(flat.path.join("content/index.md").is_file());
+    }
+
+    #[test]
+    fn enumerate_excludes_entries_without_a_descriptor() {
+        let tmp = TempDir::new().unwrap();
+        make_site(tmp.path(), "real", &[]);
+        // A dir under sites/ with a main/quiqr but no config.json is NOT a site.
+        let bogus = tmp.path().join("sites/bogus/main/quiqr");
+        fs::create_dir_all(&bogus).unwrap();
+
+        let names: Vec<_> = enumerate_sites(tmp.path())
+            .unwrap()
+            .into_iter()
+            .map(|s| s.name)
+            .collect();
+        assert_eq!(names, ["real"]);
+    }
+
+    #[test]
+    fn enumerate_malformed_descriptor_is_skipped() {
+        let tmp = TempDir::new().unwrap();
+        make_site(tmp.path(), "good", &[]);
+        let bad = tmp.path().join("sites/bad");
+        fs::create_dir_all(&bad).unwrap();
+        fs::write(bad.join("config.json"), "{ not valid json").unwrap();
+
+        let names: Vec<_> = enumerate_sites(tmp.path())
+            .unwrap()
+            .into_iter()
+            .map(|s| s.name)
+            .collect();
+        assert_eq!(names, ["good"]);
+    }
+
+    #[test]
+    fn enumerate_no_sites_dir_is_ok_and_empty() {
+        let tmp = TempDir::new().unwrap();
+        // Data dir exists but has no sites/ subdir.
         assert!(enumerate_sites(tmp.path()).unwrap().is_empty());
     }
 
@@ -254,10 +367,14 @@ mod tests {
 
     #[test]
     fn site_detection_requires_both_markers() {
+        // `is_quiqr_site` checks a *working copy* for a Hugo config + quiqr/ dir
+        // (used by the preview/host), independent of enumeration.
         let tmp = TempDir::new().unwrap();
 
         // Both markers -> site.
-        let ok = make_site(tmp.path(), "ok", &[]);
+        let ok = tmp.path().join("ok");
+        fs::create_dir_all(ok.join("quiqr")).unwrap();
+        fs::write(ok.join("config.toml"), "title = \"t\"").unwrap();
         assert!(is_quiqr_site(&ok));
 
         // Hugo config but no quiqr/.

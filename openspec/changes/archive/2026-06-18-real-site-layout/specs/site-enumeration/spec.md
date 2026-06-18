@@ -1,8 +1,5 @@
-# site-enumeration Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change quiqr-storage. Update Purpose after archive.
-## Requirements
 ### Requirement: Enumerate sites under the data directory
 
 The system SHALL enumerate the Quiqr sites under the configured data directory by
@@ -55,4 +52,3 @@ readable `config.json` SHALL be excluded.
 - **WHEN** a site is enumerated
 - **THEN** the returned site exposes the resolved working-copy path, so the
   content tree and schema model read from where `quiqr/` and `content/` are
-

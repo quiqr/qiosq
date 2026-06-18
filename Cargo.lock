@@ -982,6 +982,8 @@ dependencies = [
 name = "qtui-storage"
 version = "0.0.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror 1.0.69",
 ]

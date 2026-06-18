@@ -139,8 +139,10 @@ fn missing_model_yields_empty() {
 /// tolerant parser against real-world shape (singles with no inline fields).
 #[test]
 fn parses_the_anonymized_real_site() {
-    let site =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../qtui-storage/tests/fixtures/real-site");
+    // The fixture is laid out like a real Quiqr data folder; the site's working
+    // copy (with quiqr/model/) is sites/<name>/main.
+    let site = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../qtui-storage/tests/fixtures/real-site/sites/examplesite/main");
     let model = load_model(&site);
 
     // Collections with their folders.

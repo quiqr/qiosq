@@ -10,6 +10,8 @@ description = "Quiqr/Hugo read-only storage layer: locate data dir, enumerate si
 # Pure crate: must not depend on ratatui/rmux (see docs/01-architecture.md §2).
 [dependencies]
 thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
