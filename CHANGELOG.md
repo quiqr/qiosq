@@ -10,6 +10,12 @@ moves them into a dated version section at release time (see the README's
 
 ## [Unreleased]
 
+### Added
+- Live coding agent in the interactive TUI: a configured real agent (Claude over
+  rmux) runs as a live, site-pinned session started on the first "Ask AI"; the
+  intent is sent to that session and the agent pane streams its output each tick.
+  The fake agent remains the deterministic path for `--script`/e2e runs.
+
 ## [0.1.0] - 2026-06-18
 
 ### Added

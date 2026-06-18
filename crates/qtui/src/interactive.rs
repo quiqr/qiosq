@@ -49,11 +49,14 @@ fn event_loop<B: ratatui::backend::Backend>(
     host: &mut Host,
 ) -> Result<(), String> {
     loop {
+        // Refresh the live agent pane every tick (no-op when no session is
+        // running) so its output streams even between keypresses.
+        host.poll_agent();
+
         term.draw(|f| render(f, &host.state))
             .map_err(|e| e.to_string())?;
 
-        // Poll so the loop can later refresh agent snapshots on a timer; for now
-        // a key event is the only thing that advances it.
+        // Wait briefly for a key; on timeout, loop to re-poll + redraw.
         if !event::poll(Duration::from_millis(200)).map_err(|e| e.to_string())? {
             continue;
         }
@@ -74,11 +77,12 @@ fn event_loop<B: ratatui::backend::Backend>(
             match action {
                 Action::Quit => return Ok(()),
                 Action::AskAi { file } => {
-                    // Resolve to the current site and run the agent intent.
+                    // Send the intent to the LIVE agent session (started lazily,
+                    // pinned to the site, reused across turns). Errors surface in
+                    // the agent pane rather than crashing the UI; the next tick's
+                    // poll_agent streams the response.
                     if let Some(site) = current_site(host) {
-                        // Errors here are surfaced in the agent pane rather than
-                        // crashing the UI.
-                        if let Err(e) = host.run_agent_intent(&site, &file) {
+                        if let Err(e) = host.send_live_intent(&site, &file) {
                             host.state
                                 .set_agent_output(vec![format!("agent error: {e}")]);
                         }
