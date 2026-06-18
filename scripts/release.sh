@@ -77,10 +77,11 @@ note "current version: $CURRENT"
 note "next version:    $NEXT  (tag $TAG, $LEVEL bump)"
 
 # ---- dirty guard (skipped for --dry-run, which mutates nothing) -------------
-# jj prints "The working copy has no changes." when clean.
-if [ "$DRY_RUN" -eq 0 ] && ! jj status 2>/dev/null | grep -q 'The working copy has no changes\.'; then
+# The working copy is clean when `jj diff --summary` is empty (locale- and
+# version-independent, unlike matching jj's prose status line).
+if [ "$DRY_RUN" -eq 0 ] && [ -n "$(jj diff --summary 2>/dev/null)" ]; then
   if [ "$ALLOW_DIRTY" -eq 0 ]; then
-    die "working copy has uncommitted changes; commit them or pass --allow-dirty"
+    die "working copy has uncommitted changes; commit them or pass --allow-dirty (run 'jj status' to see them)"
   fi
   note "working copy is dirty; proceeding (--allow-dirty)"
 fi
