@@ -30,7 +30,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
-      perSystem = { system, pkgs, lib, ... }:
+      perSystem = { self', system, pkgs, lib, ... }:
         let
           pkgs' = import nixpkgs {
             inherit system;
@@ -119,41 +119,84 @@
           };
 
           # End-to-end: boot a VM running Quiqr Server, provision a sample site,
-          # run qtui headless with the fake agent, assert the full flow.
-          # E1 scaffolds this to boot + build-check; E7 fills the scenario.
-          checks.e2e = pkgs'.testers.runNixOSTest {
-            name = "quiqr-tui-e2e";
-            nodes.machine = { config, pkgs, ... }: {
-              imports = [
-                # TODO(author): import YOUR Quiqr Server NixOS module:
-                #   inputs.quiqr.nixosModules.default
-              ];
+          # run qtui headless with the fake agent, and assert the full flow puts
+          # new content on disk. The data directory is shared flat files — qtui
+          # reads it directly (Quiqr has no API), so the test points qtui's
+          # config at the same dataFolder the quiqr-server service uses.
+          checks.e2e =
+            let
+              # Both binaries (qtui + fake-agent) from our package.
+              qtuiPkg = self'.packages.default;
+              # The anonymized, theme-less real-site fixture (serveable by hugo).
+              fixture = ./crates/qtui-storage/tests/fixtures/real-site;
+              dataDir = "/var/lib/quiqr";
+            in
+            pkgs'.testers.runNixOSTest {
+              name = "quiqr-tui-e2e";
+              nodes.machine = { pkgs, ... }: {
+                imports = [
+                  "${nixpkgs-quiqr}/nixos/modules/services/web-apps/quiqr-server.nix"
+                ];
 
-              # TODO(author): enable + configure Quiqr Server, e.g.:
-              #   services.quiqr-server.enable = true;
-              #   services.quiqr-server.dataDir = "/var/lib/quiqr";
-              #   services.quiqr-server.users = [ ... ];  # the user JSON
+                services.quiqr-server = {
+                  enable = true;
+                  package = pkgs-quiqr.quiqr.server;
+                  settings.storage = {
+                    type = "fs";
+                    dataFolder = dataDir;
+                  };
+                };
 
-              environment.systemPackages = [ pkgs.hugo ];
-              virtualisation.memorySize = 2048;
+                environment.systemPackages = [ pkgs.hugo qtuiPkg ];
+                virtualisation.memorySize = 4096;
+                virtualisation.diskSize = 4096;
+              };
+
+              testScript = ''
+                start_all()
+                machine.wait_for_unit("multi-user.target")
+
+                # 1. Quiqr Server is up. (The service creates its data folder
+                #    lazily on first use, so we do not assert it pre-exists; the
+                #    provisioning step below creates it.)
+                machine.wait_for_unit("quiqr-server.service")
+
+                # 2. Provision the sample site into the Quiqr data directory.
+                machine.succeed("mkdir -p '${dataDir}/examplesite'")
+                machine.succeed("cp -r ${fixture}/. '${dataDir}/examplesite/'")
+                machine.succeed("test -f '${dataDir}/examplesite/quiqr/model/base.yaml'")
+
+                # 3. Write a qtui config pointing at that data dir, with the
+                #    fake-agent (writes a file + prints the sentinel) as the agent.
+                machine.succeed("""
+                  cat > /root/qtui.toml <<EOF
+                [storage]
+                quiqr_data_dir = "${dataDir}"
+
+                [preview]
+                port_range = [13140, 13160]
+                ready_timeout_ms = 60000
+
+                [agent]
+                command = "${qtuiPkg}/bin/fake-agent"
+                completion_sentinel = "<<QTUI_TASK_DONE>>"
+                EOF
+                """)
+
+                # 4. Run qtui headless through the full flow. The fake-agent writes
+                #    the new content file (QTUI_FAKE_WRITE) when "asked".
+                new_file = "${dataDir}/examplesite/content/post/agent-wrote-this.md"
+                machine.succeed(
+                    f"QTUI_FAKE_WRITE='{new_file}' QTUI_FAKE_SENTINEL='<<QTUI_TASK_DONE>>' "
+                    "qtui --config /root/qtui.toml --site examplesite "
+                    "--script open-site,open-file,ask-ai,await"
+                )
+
+                # 5. Assert the agent's new content file exists on disk.
+                machine.succeed(f"test -f '{new_file}'")
+                machine.succeed(f"grep -q 'written by fake-agent' '{new_file}'")
+              '';
             };
-
-            testScript = ''
-              start_all()
-              machine.wait_for_unit("multi-user.target")
-
-              # TODO(E7): wait_for_unit for the Quiqr Server service, provision a
-              # sample Quiqr site + quiqr/model schema into the data dir, then:
-              #   1. run qtui headless (--script) with the fake agent configured,
-              #   2. assert: site listed, hugo server reachable, schema Menu has a
-              #      Single + Collection, file opens read-only, "Ask AI" injects
-              #      intent, fake agent writes a new content file with the
-              #      sentinel,
-              #   3. assert the new file exists on disk.
-              # For E1 this just proves the VM boots.
-              machine.succeed("true")
-            '';
-          };
         };
     };
 }

@@ -23,15 +23,20 @@ it can be exercised with a `TestBackend`.
 
 ### Requirement: The right pane is the agent view
 
-The UI SHALL reserve the right pane for the coding-agent session view. Until the
-agent bridge lands (E6/E7) the right pane SHALL show a labelled placeholder, so
-the two-pane shape is established and the user understands where the agent
-appears.
+The UI SHALL reserve the right pane for the coding-agent session view. It SHALL
+render the agent's current output (the latest snapshot supplied by the host) when
+the agent is running, and SHALL fall back to a neutral agent-pane label when there
+is no output yet — so the user always understands where the agent appears and the
+two-pane shape is preserved. The user SHALL never be attached to the raw session.
 
-#### Scenario: Right pane shows the agent placeholder
-- **WHEN** the app is rendered before the agent bridge exists
-- **THEN** the right pane is labelled as the agent pane (a placeholder), not left
-  blank or used for left-pane content
+#### Scenario: Right pane shows agent output when available
+- **WHEN** the host has supplied agent output and the app is rendered
+- **THEN** the right pane shows that output
+
+#### Scenario: Right pane shows a label when there is no output
+- **WHEN** the agent has produced no output yet
+- **THEN** the right pane shows a neutral agent-pane label, not blank and not the
+  left pane's content
 
 ### Requirement: The UI never mutates site files
 

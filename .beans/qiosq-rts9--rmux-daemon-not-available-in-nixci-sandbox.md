@@ -8,7 +8,7 @@ tags:
     - discovered
     - blocked
 created_at: 2026-06-17T22:40:02Z
-updated_at: 2026-06-18T00:16:33Z
+updated_at: 2026-06-18T00:39:20Z
 parent: qiosq-me0f
 ---
 
@@ -32,3 +32,6 @@ FINDING: mipmip/rmux main has NO flake.nix yet (the install-flake is still in pr
 INTERIM UNBLOCK (no need to wait for the official flake): build the `rmux` binary from source via rustPlatform.buildRustPackage { src = fetchGit github:mipmip/rmux; cargoLock.lockFile = Cargo.lock; } and put it on PATH in the dev shell + nix-flake-check sandbox. Then connect_or_start() finds the daemon and RmuxAgent's live path works. Probe-build in progress.
 
 SWAP LATER: when the official rmux flake is published, replace the source build with the proper flake input. Keep this bean open until that swap (then it's fully resolved).
+
+## E7 update — interim daemon WORKS in CI
+The source-built rmux (github:mipmip/rmux) is on the dev shell PATH and rmux-sdk's RmuxAgent compiles + the unit path works. The e2e VM uses the FAKE agent (no daemon needed there), so nix flake check is fully green without the official flake. This bean stays OPEN only to track the cosmetic swap: replace the buildRustPackage source build with the official rmux flake's package output once published.

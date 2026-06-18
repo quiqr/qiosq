@@ -1,13 +1,13 @@
 ---
 # qiosq-zyu7
 title: 'E7 VM: import quiqr-server module from mipmip/nixpkgs fork'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - discovered
 created_at: 2026-06-17T23:07:27Z
-updated_at: 2026-06-17T23:07:27Z
+updated_at: 2026-06-18T00:39:07Z
 parent: qiosq-s0ui
 ---
 
@@ -28,3 +28,6 @@ The Quiqr Server NixOS module lives INSIDE the nixpkgs fork, directly importable
 
 ## E7 plan
 wait_for_unit the quiqr-server service, provision the notnix fixture into dataFolder, run qtui headless (--script) with the fake-agent, assert on-disk result. Per docs, the e2e uses the FAKE agent (not rmux/real LLM), so this VM half is NOT blocked on the rmux daemon (qiosq-rts9).
+
+## Summary of Changes
+Realized in E7: checks.e2e imports ${nixpkgs-quiqr}/nixos/modules/services/web-apps/quiqr-server.nix, enables services.quiqr-server (fs storage, dataFolder /var/lib/quiqr), and the VM boots Quiqr Server + runs the full qtui flow. nix flake check green.
