@@ -1,11 +1,11 @@
 ---
 # qiosq-r7gf
 title: initconf, detect or ask where the quiqr storage is
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-06-18T07:16:35Z
-updated_at: 2026-06-18T07:40:11Z
+updated_at: 2026-06-18T08:05:55Z
 blocked_by:
     - qiosq-rblj
 ---
@@ -49,3 +49,15 @@ Add a `qtui init` flow (and auto-trigger when there is no config / empty data di
 
 ## Notes
 Post-M1 feature (not part of milestone M1, which is complete). Needs its own OpenSpec change + epic when scheduled. Left as a draft pending refinement of the open questions above.
+
+## Summary of Changes
+Friendly first-run: detect the Quiqr storage (across both editions) or ask, then write the config.
+- qtui-config::discover (pure, injectable home/config roots): reads the Electron desktop app's instance_settings.json (storage.dataFolder) from the per-OS app config dir (dirs crate), expands ~, plus fallbacks ~/Quiqr + ~/Quiqr Data; de-dups by resolved path; annotates each candidate with source (ElectronSettings|Fallback) + valid + site_count (lightweight sites/*/config.json count — no qtui-storage dep, keeps config foundational). Tolerant of missing/malformed JSON.
+- qtui-config: default_config_path() = <config_dir>/qiosq/config.toml; write_config(path, data_dir, force) renders a minimal valid TOML (round-trips Config::load_and_validate), creates parent dirs, refuses to clobber without force.
+- qtui binary: `qtui init` discovers, lists candidates (path/source/site count), prompts to choose or enter a custom path; headless auto-selects the single valid candidate, else errors listing candidates. Bare `qtui` (no --config) loads ~/.config/qiosq/config.toml if present, else errors with guidance to run `qtui init`; --config still overrides.
+- Decisions taken: config at XDG ~/.config/qiosq/config.toml; full scope (discover+choose+write+auto-load); bare-launch OFFERS init via guidance rather than auto-launching (safer).
+- Added deps: dirs 6 + serde_json (qtui-config). Verified end to end on the real machine: `qtui init` found ~/Quiqr (1 site), wrote the config, and a subsequent bare `qtui --script` auto-loaded it. cargo test --workspace, clippy -D warnings, fmt, and nix flake check (incl. VM e2e) all green.
+
+Depended on qiosq-rblj (real-layout enumeration), now landed. Follow-up idea (not built): a WP5.1 in-TUI init screen instead of the plain prompt; Server-edition settings-file discovery.
+
+OpenSpec change init-config archived (capabilities storage-discovery + init-config added).

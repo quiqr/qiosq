@@ -12,6 +12,11 @@ description = "Load and validate the quiqr-tui TOML configuration with clear per
 serde = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
+serde_json = { workspace = true } # parse Quiqr's instance_settings.json
+dirs = { workspace = true }       # per-OS config dir + home dir
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
