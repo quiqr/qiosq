@@ -10,6 +10,8 @@ moves them into a dated version section at release time (see the README's
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-18
+
 ### Added
 - Milestone M1 — the two-pane PoC alpha base, proven end to end against a real
   Quiqr Server in a NixOS VM (`nix flake check`):
