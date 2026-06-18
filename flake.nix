@@ -40,6 +40,10 @@
             extensions = [ "rust-src" "clippy" "rustfmt" ];
           };
 
+          # Single source of version truth: the workspace Cargo.toml. The release
+          # script (scripts/release.sh) bumps only that file.
+          workspaceVersion = (lib.importTOML ./Cargo.toml).workspace.package.version;
+
           # The rmux binary (CLI + hidden daemon) built from the source input.
           # `rmux-sdk`'s connect_or_start() spawns this, so it must be on PATH
           # for the real agent path. Interim: build from source until the
@@ -80,6 +84,8 @@
             beans            # nixpkgs#beans — agent-first issue tracker
             openspec         # nixpkgs#openspec — spec-driven development CLI
             rmuxPkg          # rmux CLI + daemon (for the real agent bridge, E6/E7)
+            gh               # GitHub CLI — used by scripts/release.sh
+            shellcheck       # lint scripts/*.sh
           ];
         in
         {
@@ -98,7 +104,7 @@
           # `nix build`
           packages.default = pkgs'.rustPlatform.buildRustPackage {
             pname = "quiqr-tui";
-            version = "0.0.0";
+            version = workspaceVersion;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;  # exists after E1 scaffolding
           };
@@ -109,7 +115,7 @@
           # because there is nothing to install for a test-only build).
           checks.unit = pkgs'.rustPlatform.buildRustPackage {
             pname = "quiqr-tui-tests";
-            version = "0.0.0";
+            version = workspaceVersion;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             doCheck = true;

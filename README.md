@@ -80,7 +80,39 @@ short version:
 
 ---
 
+## Releasing (maintainers)
+
+Releases are cut with `scripts/release.sh`, run from the Nix dev shell (it needs
+`jj`, `git`, `gh`, and `cargo` — all provided by `nix develop`). The workspace
+version lives only in `Cargo.toml`; the flake derives its version from there.
+
+1. Between releases, add notes under the `## [Unreleased]` heading in
+   `CHANGELOG.md` as you work.
+2. Make sure `gh` is authenticated (`gh auth status`) and the working copy is
+   clean.
+3. Cut the release:
+
+   ```bash
+   scripts/release.sh patch      # or: minor | major
+   scripts/release.sh minor --dry-run   # preview without changing anything
+   ```
+
+   The script computes the next SemVer version, bumps `Cargo.toml` (refreshing
+   `Cargo.lock`), promotes the `Unreleased` changelog entries into a dated
+   `## [X.Y.Z]` section, commits the bump, creates and pushes the annotated tag
+   `vX.Y.Z`, and creates the GitHub release with those notes.
+
+   It refuses to run on a dirty working copy unless you pass `--allow-dirty`
+   (which commits only the files the script itself changed). Use `--dry-run` to
+   see the plan first.
+
+---
+
 ## Status
 
-Pre-alpha. This bundle contains intent, specs, and harness — not yet an
-implementation. The agent builds the implementation.
+Alpha base. Milestone M1 — the two-pane PoC — is implemented and proven end to
+end: `nix flake check` passes all unit/integration tests **and** a NixOS VM test
+that boots Quiqr Server, runs `qtui` against it, and asserts the agent writes
+content on disk. Run `qtui init` to point it at your Quiqr storage, then `qtui`.
+Later milestones (SSH/kiosk hardening, the wrapper app, the publish pipeline)
+are not yet built.
