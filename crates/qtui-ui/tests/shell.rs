@@ -364,3 +364,27 @@ fn viewfile_renders_supplied_contents_read_only() {
         );
     }
 }
+
+// ----- agent pane render (E7) ------------------------------------------------
+
+#[test]
+fn right_pane_renders_agent_output_when_present() {
+    let mut app = AppState::new(sites(), false);
+    // No output yet -> neutral label.
+    assert!(render_to_string(&app).contains("agent pane"));
+
+    // Host pushes the agent's latest snapshot -> it appears in the right pane.
+    app.set_agent_output(vec![
+        "claude> writing content/posts/new.md".to_string(),
+        "<<QTUI_TASK_DONE>>".to_string(),
+    ]);
+    let screen = render_to_string(&app);
+    assert!(
+        screen.contains("writing content/posts/new.md"),
+        "right pane should show agent output:\n{screen}"
+    );
+    assert!(
+        !screen.contains("agent pane"),
+        "label replaced by real output"
+    );
+}

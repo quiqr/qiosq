@@ -1,34 +1,94 @@
 //! quiqr-tui (codename *qiosq*) — the kiosk binary.
 //!
-//! Epic E1: this entrypoint only reports its version, proving the workspace
-//! wires together and `nix build` produces a runnable binary. Later epics load
-//! the config, construct the storage/model/preview/agent services, and run the
-//! UI loop and mode state machine here.
+//! The host wires the services together behind the `qtui-ui` state machine:
+//! load the config, enumerate sites (`qtui-storage`), build the navigation model
+//! (`qtui-model`), start/stop the Hugo preview (`qtui-preview`) on site
+//! open/close, and drive the agent (`qtui-agent`). Two run modes:
+//!
+//! - **interactive** (default): a crossterm raw-mode terminal loop.
+//! - **headless** (`--script <steps>`): the same transitions driven by a step
+//!   list with no TTY — what the e2e test runs.
+//!
+//! Usage:
+//!   qtui --version
+//!   qtui --config <path> [--site <name>]                 # interactive
+//!   qtui --config <path> --script open-site,open-file,ask-ai,await   # headless
 
-// Bring every workspace member into the dependency graph so the binary build
-// fails if any of them stops compiling. `qtui-config` is exercised for real;
-// the rest are stubs until their epics (E2–E7).
-use qtui_agent as _;
-use qtui_model as _;
-use qtui_preview as _;
-use qtui_storage as _;
-use qtui_ui as _;
+mod host;
+mod interactive;
+mod script;
+
+use std::process::ExitCode;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() {
-    let arg = std::env::args().nth(1);
-    match arg.as_deref() {
-        Some("--version" | "-V" | "version") | None => {
-            println!("qtui {VERSION}");
-        }
-        Some(other) => {
-            eprintln!("qtui {VERSION}: unknown argument {other:?}");
-            eprintln!("usage: qtui [--version]");
-            std::process::exit(2);
-        }
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.is_empty() || matches!(args[0].as_str(), "--version" | "-V" | "version") {
+        println!("qtui {VERSION}");
+        return ExitCode::SUCCESS;
     }
 
-    // Touch qtui-config's public surface so the link is real, not just declared.
-    debug_assert!(qtui_config::EXAMPLE_CONFIG_FILENAME.ends_with(".toml"));
+    let opts = match Options::parse(&args) {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("qtui: {e}");
+            eprintln!(
+                "usage: qtui [--version] [--config <path>] [--site <name>] [--script <steps>]"
+            );
+            return ExitCode::from(2);
+        }
+    };
+
+    let result = if let Some(steps) = &opts.script {
+        script::run(&opts.config, opts.site.as_deref(), steps)
+    } else {
+        interactive::run(&opts.config, opts.site.as_deref())
+    };
+
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("qtui: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Parsed command-line options.
+struct Options {
+    config: std::path::PathBuf,
+    site: Option<String>,
+    /// Comma-separated headless step list, when in scripted mode.
+    script: Option<Vec<String>>,
+}
+
+impl Options {
+    fn parse(args: &[String]) -> Result<Self, String> {
+        let mut config = None;
+        let mut site = None;
+        let mut script = None;
+        let mut it = args.iter();
+        while let Some(arg) = it.next() {
+            match arg.as_str() {
+                "--config" => {
+                    config = Some(it.next().ok_or("--config needs a path")?.into());
+                }
+                "--site" => {
+                    site = Some(it.next().ok_or("--site needs a name")?.clone());
+                }
+                "--script" => {
+                    let steps = it.next().ok_or("--script needs a step list")?;
+                    script = Some(steps.split(',').map(|s| s.trim().to_string()).collect());
+                }
+                other => return Err(format!("unknown argument {other:?}")),
+            }
+        }
+        Ok(Self {
+            config: config.ok_or("--config is required")?,
+            site,
+            script,
+        })
+    }
 }

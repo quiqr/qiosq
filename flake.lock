@@ -49,10 +49,44 @@
         "type": "github"
       }
     },
+    "nixpkgs-quiqr": {
+      "locked": {
+        "lastModified": 1778244454,
+        "narHash": "sha256-eCF1aFQ72fwIENKMNKqMYx26O0tiXj2lKvBNNjMiiyI=",
+        "owner": "mipmip",
+        "repo": "nixpkgs",
+        "rev": "c941b38610544dc04b889440fc912d2eae440797",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mipmip",
+        "ref": "quiqr-023",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "rmux": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781724543,
+        "narHash": "sha256-IXBg43bRb0NoXVuZNncyadMJLfpofGxwvmGoECP3x0s=",
+        "owner": "mipmip",
+        "repo": "rmux",
+        "rev": "0eae60d174dc63131db23cb209bf3aada7d24c54",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mipmip",
+        "repo": "rmux",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-quiqr": "nixpkgs-quiqr",
+        "rmux": "rmux",
         "rust-overlay": "rust-overlay"
       }
     },

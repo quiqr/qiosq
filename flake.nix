@@ -9,18 +9,24 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # TODO(author): wire in YOUR Quiqr flake. You author the Quiqr Nix module +
-    # package, so replace this with the real input. The e2e VM imports its
-    # NixOS module to run Quiqr Server.
-    #
-    #   quiqr.url = "github:quiqr/quiqr-nix";   # <-- replace with the real ref
-    #   quiqr.inputs.nixpkgs.follows = "nixpkgs";
-    #
-    # Until then the e2e VM is scaffolded but the Quiqr service block is a
-    # placeholder (see checks.e2e below).
+    # rmux source (E7). The repo's `rmux` binary is both the CLI and the hidden
+    # daemon that `rmux-sdk` connects to. It has no flake.nix yet, so we consume
+    # it as a plain source tree and build the binary ourselves (see `rmux`
+    # below). Swap to the official rmux flake's package output once it lands
+    # (bean qiosq-rts9).
+    rmux = {
+      url = "github:mipmip/rmux";
+      flake = false;
+    };
+
+    # Quiqr Server lives in the author's nixpkgs fork; the e2e VM imports its
+    # NixOS module (nixos/modules/services/web-apps/quiqr-server.nix) and uses
+    # `quiqr.server`. `quiqr-023` is a branch — pin a rev in flake.lock and bump
+    # only on request.
+    nixpkgs-quiqr.url = "github:mipmip/nixpkgs/quiqr-023";
   };
 
-  outputs = inputs@{ flake-parts, nixpkgs, rust-overlay, ... }:
+  outputs = inputs@{ flake-parts, nixpkgs, nixpkgs-quiqr, rust-overlay, rmux, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
 
@@ -32,6 +38,24 @@
           };
           rustToolchain = pkgs'.rust-bin.stable.latest.default.override {
             extensions = [ "rust-src" "clippy" "rustfmt" ];
+          };
+
+          # The rmux binary (CLI + hidden daemon) built from the source input.
+          # `rmux-sdk`'s connect_or_start() spawns this, so it must be on PATH
+          # for the real agent path. Interim: build from source until the
+          # official rmux flake exposes a package (bean qiosq-rts9).
+          rmuxPkg = pkgs'.rustPlatform.buildRustPackage {
+            pname = "rmux";
+            version = "0.6.1";
+            src = rmux;
+            cargoLock.lockFile = "${rmux}/Cargo.lock";
+            doCheck = false; # upstream's own tests; we only need the binary
+          };
+
+          # Quiqr Server packages + module, from the author's nixpkgs fork.
+          pkgs-quiqr = import nixpkgs-quiqr {
+            inherit system;
+            config.allowUnfree = true;
           };
 
           # Tools the agent and developers need in the shell.
@@ -55,6 +79,7 @@
             nodejs_22        # runtime some agent/spec tooling expects
             beans            # nixpkgs#beans — agent-first issue tracker
             openspec         # nixpkgs#openspec — spec-driven development CLI
+            rmuxPkg          # rmux CLI + daemon (for the real agent bridge, E6/E7)
           ];
         in
         {

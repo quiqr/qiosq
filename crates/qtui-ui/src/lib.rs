@@ -10,6 +10,8 @@
 //! mode. All write-like verbs (New, Save, Discard, Ask AI) are emitted as
 //! [`Action`]s for the agent; the UI never writes site files.
 
+use std::path::PathBuf;
+
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
@@ -84,6 +86,9 @@ pub struct AppState {
     /// The opened file's text, supplied by the host for the read-only viewer
     /// (E6). The UI never reads files itself.
     open_file_contents: Option<String>,
+    /// The agent pane's latest snapshot lines, pushed by the host each tick
+    /// (E7). Rendered in the right pane; empty -> a neutral label.
+    agent_output: Vec<String>,
     /// Which navigation view a freshly opened site shows first.
     default_nav: NavView,
 }
@@ -104,6 +109,7 @@ impl AppState {
             open_file: None,
             preview_url: None,
             open_file_contents: None,
+            agent_output: Vec::new(),
             default_nav: if schema_nav_first {
                 NavView::SchemaMenu
             } else {
@@ -156,6 +162,17 @@ impl AppState {
     /// The opened file's contents, if supplied.
     pub fn open_file_contents(&self) -> Option<&str> {
         self.open_file_contents.as_deref()
+    }
+
+    /// Push the agent pane's latest snapshot lines (E7). The host calls this
+    /// each tick with `Agent::snapshot()` output; the right pane renders them.
+    pub fn set_agent_output(&mut self, lines: Vec<String>) {
+        self.agent_output = lines;
+    }
+
+    /// The agent pane's current snapshot lines.
+    pub fn agent_output(&self) -> &[String] {
+        &self.agent_output
     }
 }
 
@@ -246,12 +263,16 @@ fn open_forward(state: &mut AppState) -> Option<Action> {
         }
         // Only the content-tree view opens files directly; opening a schema
         // entry is resolved to its path by the host (E5/E6) — for the shell we
-        // open the selected content-tree file.
+        // open the selected content-tree file. Directory rows are not openable.
         Mode::Browse {
             nav: NavView::ContentTree,
         } => {
-            if let Some(name) = content_row_name(state, state.selected_browse) {
-                state.open_file = Some(name);
+            if let Some(rel) = content_rows(&state.content)
+                .get(state.selected_browse)
+                .and_then(|row| row.rel_path.clone())
+            {
+                // Store the true path relative to content/, not the display row.
+                state.open_file = Some(rel.to_string_lossy().into_owned());
                 state.mode = Mode::ViewFile;
             }
         }
@@ -262,6 +283,13 @@ fn open_forward(state: &mut AppState) -> Option<Action> {
 
 // ----- Row helpers (flatten the data each mode lists) -----------------------
 
+/// A flattened content-tree row: what to display, and the file path (relative to
+/// `content/`) it opens — `None` for directory rows, which are not openable.
+struct ContentRow {
+    display: String,
+    rel_path: Option<PathBuf>,
+}
+
 fn browse_row_count(state: &AppState, nav: NavView) -> usize {
     match nav {
         NavView::ContentTree => content_rows(&state.content).len(),
@@ -269,21 +297,24 @@ fn browse_row_count(state: &AppState, nav: NavView) -> usize {
     }
 }
 
-fn content_row_name(state: &AppState, idx: usize) -> Option<String> {
-    content_rows(&state.content).get(idx).cloned()
-}
-
-/// Flatten the content tree to display rows (depth-indented names).
-fn content_rows(nodes: &[ContentNode]) -> Vec<String> {
-    fn walk(nodes: &[ContentNode], depth: usize, out: &mut Vec<String>) {
+/// Flatten the content tree to display rows (depth-indented), each carrying its
+/// real `rel_path` for files (and `None` for directories).
+fn content_rows(nodes: &[ContentNode]) -> Vec<ContentRow> {
+    fn walk(nodes: &[ContentNode], depth: usize, out: &mut Vec<ContentRow>) {
         for n in nodes {
             let indent = "  ".repeat(depth);
             match n {
                 ContentNode::Dir { name, children, .. } => {
-                    out.push(format!("{indent}{name}/"));
+                    out.push(ContentRow {
+                        display: format!("{indent}{name}/"),
+                        rel_path: None,
+                    });
                     walk(children, depth + 1, out);
                 }
-                ContentNode::File { name, .. } => out.push(format!("{indent}{name}")),
+                ContentNode::File { name, rel_path } => out.push(ContentRow {
+                    display: format!("{indent}{name}"),
+                    rel_path: Some(rel_path.clone()),
+                }),
             }
         }
     }
@@ -359,7 +390,7 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         .split(work);
 
     render_left(frame, panes[0], state);
-    render_right(frame, panes[1]);
+    render_right(frame, panes[1], state);
     render_legend(frame, legend_row, state);
 }
 
@@ -404,7 +435,10 @@ fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
                 NavView::SchemaMenu => "Menu",
             };
             let rows = match nav {
-                NavView::ContentTree => content_rows(&state.content),
+                NavView::ContentTree => content_rows(&state.content)
+                    .into_iter()
+                    .map(|r| r.display)
+                    .collect(),
                 NavView::SchemaMenu => menu_rows(&state.model),
             };
             (title.to_string(), rows, state.selected_browse)
@@ -433,11 +467,16 @@ fn render_left(frame: &mut Frame, area: Rect, state: &AppState) {
     frame.render_stateful_widget(list, list_area, &mut st);
 }
 
-fn render_right(frame: &mut Frame, area: Rect) {
-    // The agent pane is a labelled placeholder until E6/E7 wire in rmux.
+fn render_right(frame: &mut Frame, area: Rect, state: &AppState) {
+    // The agent pane renders the agent's latest snapshot (pushed by the host via
+    // `set_agent_output`), falling back to a neutral label when there is none.
     let block = Block::default().borders(Borders::ALL).title("Agent");
-    let body = Paragraph::new("(agent pane — Claude Code appears here)").block(block);
-    frame.render_widget(body, area);
+    let text = if state.agent_output().is_empty() {
+        "(agent pane — Claude Code appears here)".to_string()
+    } else {
+        state.agent_output().join("\n")
+    };
+    frame.render_widget(Paragraph::new(text).block(block), area);
 }
 
 fn render_legend(frame: &mut Frame, area: Rect, state: &AppState) {

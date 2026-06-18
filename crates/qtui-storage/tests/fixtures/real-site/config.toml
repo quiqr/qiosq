@@ -8,7 +8,9 @@ enableInlineShortcodes = true
 ignoreErrors = [
   "error-remote-getjson"
 ]
-theme = "Paper"
+# No theme: the fixture omits the (64-file) Paper theme, so Hugo serves with
+# default rendering. That is enough for the preview lifecycle + e2e (we assert
+# reachability and the agent's on-disk write, not rendered HTML).
 title = "Example Site"
 
 [params]

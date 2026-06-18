@@ -1,10 +1,11 @@
 ---
 # qiosq-s0ui
 title: E7 — Agent pane render + E2E proof
-status: todo
+status: in-progress
 type: epic
+priority: normal
 created_at: 2026-06-17T15:56:53Z
-updated_at: 2026-06-17T15:56:53Z
+updated_at: 2026-06-18T00:19:45Z
 parent: qiosq-mer9
 ---
 

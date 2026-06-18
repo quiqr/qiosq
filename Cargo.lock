@@ -939,6 +939,7 @@ dependencies = [
  "qtui-preview",
  "qtui-storage",
  "qtui-ui",
+ "ratatui",
 ]
 
 [[package]]

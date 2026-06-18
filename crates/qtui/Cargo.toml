@@ -18,6 +18,7 @@ qtui-model = { path = "../qtui-model" }
 qtui-agent = { path = "../qtui-agent" }
 qtui-preview = { path = "../qtui-preview" }
 qtui-ui = { path = "../qtui-ui" }
+ratatui = { workspace = true }
 
 [lints]
 workspace = true
